@@ -2417,6 +2417,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe97eec672ed4f149bb90796bc829d15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  listOfDances: []
 --- !u!1 &1902896020
 GameObject:
   m_ObjectHideFlags: 0

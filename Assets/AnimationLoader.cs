@@ -13,7 +13,7 @@ public class AnimationLoader : MonoBehaviour
     void Start()
     {
         string myPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MMDAFiles");
-        loadFile(Path.Combine(myPath, "MMDFiles"));
+        loadAllFromPath(Path.Combine(myPath, "MMDFiles"));
     }
 
     public Dictionary<string, rotNPos> getBoneMovementAtFrame(string danceName, uint frame)
@@ -22,13 +22,13 @@ public class AnimationLoader : MonoBehaviour
 
         foreach (KeyValuePair<string, Dictionary<uint, rotNPos>> bone in dances[danceName])
         {
-            rotNPos closestPos;
-            rotNPos closestNeg;
+            rotNPos closestPos = default;
+            rotNPos closestNeg = default;
 
             int closestPosFrame = 99^99;
             int closestNegFrame = -99^99;
 
-            rotNPos endRes;
+            rotNPos endRes = default;
 
             foreach (KeyValuePair<uint, rotNPos> frameKPV in bone.Value)
             {
@@ -61,13 +61,14 @@ public class AnimationLoader : MonoBehaviour
             if (closestPosFrame != 0 && closestNegFrame != 0)
             {
                 // idk what i do here...
+                float posScale = (float)closestPosFrame / (closestPosFrame + Math.Abs(closestNegFrame));
 
-                float posScale = (float)closestPosFrame/(closestPosFrame + Math.Abs(closestNegFrame));
+                endRes = closestPos;
 
             }
+
+            retDic.Add(bone.Key, endRes);
         }
-
-
 
         return retDic;
     }
@@ -78,73 +79,99 @@ public class AnimationLoader : MonoBehaviour
         public Quaternion rot;
     }
 
-    void loadFile(string path)
+    void loadAllFromPath(string path)
     {
-        Debug.Log("f");
-
         DirectoryInfo info = new DirectoryInfo(path);
-        FileInfo[] fileInfo = info.GetFiles();
-        foreach (FileInfo file in fileInfo)
+        DirectoryInfo[] fileInfo = info.GetDirectories();
+
+        foreach (DirectoryInfo file in fileInfo)
         {
-            Dictionary<string, Dictionary<uint, rotNPos>> frames = new Dictionary<string, Dictionary<uint, rotNPos>>();
+            Debug.Log(file.Name);
+            addDance(file);
+        }
+    }
 
-            int arrayPosition = 0;
-            byte[] bytes = readFile(file.FullName);
+    void addDance(DirectoryInfo folderParent)
+    {
+        // make a dance object, and have the motion in it, but for now, dont...
 
-            string start = System.Text.Encoding.UTF8.GetString(getAndPushBytes(bytes, ref arrayPosition, 30), 0, 30);
-
-            Debug.Log("----------------------------------------------------------------- start new thing");
-
-            // check if it is the new or old version of MMD
-            bool newVersion = false;
-            if (start.Substring(0, "Vocaloid Motion Data 0002".Length) == "Vocaloid Motion Data 0002")
-                newVersion = true;
-
-            arrayPosition += 10;
-            if (newVersion)
-                arrayPosition += 10;
-
-
-            Debug.Log(arrayPosition + " | " + (start.Substring(0, "Vocaloid Motion Data 0002".Length) == "Vocaloid Motion Data 0002"));
-
-            uint howManyKeyframes = BitConverter.ToUInt32(getAndPushBytes(bytes, ref arrayPosition, 4));
-
-            Debug.Log("Frames: " + howManyKeyframes);
-
-            for (int keyframeIndex = 0; keyframeIndex < howManyKeyframes; keyframeIndex++)
+        foreach (FileInfo file in folderParent.GetFiles())
+        {
+            if (file.Extension.ToLower() == ".vmd")
             {
-                string boneName = System.Text.Encoding.GetEncoding("shift-jis").GetString(getAndPushBytes(bytes, ref arrayPosition, 15), 0, 15);
-                uint frame = BitConverter.ToUInt32(getAndPushBytes(bytes, ref arrayPosition, 4));
+                byte[] bytes = readFile(file.FullName);
 
-                float xP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-                float yP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-                float zP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+                listOfDances.Add(folderParent.Name);
 
-                float xR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-                float yR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-                float zR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-                float wR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+                Dictionary<string, Dictionary<uint, rotNPos>> motion = getMotion(bytes);
+                
+                dances.Add(folderParent.Name, motion);
+            }
+        }
+    }
 
-                if (!frames.ContainsKey(boneName))
-                {
-                    Debug.Log("Add bone: " + boneName);
-                    frames.Add(boneName, new Dictionary<uint, rotNPos>());
-                }
+    Dictionary<string, Dictionary<uint, rotNPos>> getMotion(byte[] bytes)
+    {
+        Dictionary<string, Dictionary<uint, rotNPos>> frames = new Dictionary<string, Dictionary<uint, rotNPos>>();
 
-                rotNPos thisRNP = new rotNPos();
-                thisRNP.vec = new Vector3(xP, yP, zP);
-                thisRNP.rot = new Quaternion(xR, yR, zR, wR);
+        int arrayPosition = 0;
 
-                frames[boneName].Add(frame, thisRNP);
+        string start = System.Text.Encoding.UTF8.GetString(getAndPushBytes(bytes, ref arrayPosition, 30), 0, 30);
 
-                //skip frame interpolation data (i have no clue how it works/what it dose, so its basically useless...)
-                arrayPosition += 64;
+
+        // check if it is the new or old version of MMD
+        bool newVersion = false;
+        if (start.Substring(0, "Vocaloid Motion Data 0002".Length) == "Vocaloid Motion Data 0002")
+            newVersion = true;
+
+        arrayPosition += 10;
+        if (newVersion)
+            arrayPosition += 10;
+
+        string getCopy = "";
+
+
+        //Debug.Log(arrayPosition + " | " + (start.Substring(0, "Vocaloid Motion Data 0002".Length) == "Vocaloid Motion Data 0002"));
+
+        uint howManyKeyframes = BitConverter.ToUInt32(getAndPushBytes(bytes, ref arrayPosition, 4));
+
+        Debug.Log("Frames: " + howManyKeyframes);
+
+        for (int keyframeIndex = 0; keyframeIndex < howManyKeyframes; keyframeIndex++)
+        {
+            string boneName = System.Text.Encoding.GetEncoding("shift-jis").GetString(getAndPushBytes(bytes, ref arrayPosition, 15), 0, 15);
+            uint frame = BitConverter.ToUInt32(getAndPushBytes(bytes, ref arrayPosition, 4));
+
+            float xP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+            float yP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+            float zP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+
+            float xR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+            float yR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+            float zR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+            float wR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
+
+            if (!frames.ContainsKey(boneName))
+            {
+                //Debug.Log("Add bone: " + boneName);
+                getCopy = getCopy + boneName + ">\n";
+                frames.Add(boneName, new Dictionary<uint, rotNPos>());
             }
 
-            listOfDances.Add(file.Name);
-            dances.Add(file.Name, frames);
-            Debug.Log("totalling in: " + frames.Count);
+            rotNPos thisRNP = new rotNPos();
+            thisRNP.vec = new Vector3(xP, yP, zP);
+            thisRNP.rot = new Quaternion(xR, yR, zR, wR);
+
+            frames[boneName].Add(frame, thisRNP);
+
+            //skip frame interpolation data (i have no clue how it works/what it dose, so its basically useless...)
+            arrayPosition += 64;
         }
+
+        GUIUtility.systemCopyBuffer = getCopy;
+
+        //Debug.Log("totalling in: " + frames.Count);
+        return frames;
     }
 
     byte[] getAndPushBytes(byte[] bytes, ref int bytePos, int bytesToReturn)
