@@ -8,7 +8,7 @@ public class AnimationLoader : MonoBehaviour
 {
     public List<string> listOfDances = default;
 
-    private Dictionary<string, Dictionary<string, Dictionary<uint, rotNPos>>> dances = default;
+    private Dictionary<string, Dictionary<string, Dictionary<uint, rotNPos>>> dances = new Dictionary<string, Dictionary<string, Dictionary<uint, rotNPos>>>();
     // Start is called before the first frame update
     void Start()
     {
@@ -18,7 +18,7 @@ public class AnimationLoader : MonoBehaviour
 
     public Dictionary<string, rotNPos> getBoneMovementAtFrame(string danceName, uint frame)
     {
-        Dictionary<string, rotNPos> retDic = default;
+        Dictionary<string, rotNPos> retDic = new Dictionary<string, rotNPos>();
 
         foreach (KeyValuePair<string, Dictionary<uint, rotNPos>> bone in dances[danceName])
         {
@@ -32,7 +32,7 @@ public class AnimationLoader : MonoBehaviour
 
             foreach (KeyValuePair<uint, rotNPos> frameKPV in bone.Value)
             {
-                uint diff = frame - frameKPV.Key;
+                int diff = (int)frame - (int)frameKPV.Key;
                 if (diff > 0) // change pos(positive) frame
                 {
                     if (diff < closestPosFrame)
@@ -43,7 +43,7 @@ public class AnimationLoader : MonoBehaviour
                 }
                 else if (diff < 0) // change neg(negative) frame
                 {
-                    if (diff > closestPosFrame)
+                    if (diff > closestNegFrame)
                     {
                         closestNegFrame = (int)diff;
                         closestNeg = frameKPV.Value;
@@ -58,13 +58,21 @@ public class AnimationLoader : MonoBehaviour
                 }
             }
 
-            if (closestPosFrame != 0 && closestNegFrame != 0)
+            if (closestPosFrame != 0 && closestNegFrame != 0 && closestPosFrame != (99^99) && closestNegFrame != (-99^99))
             {
                 // idk what i do here...
                 float posScale = (float)closestPosFrame / (closestPosFrame + Math.Abs(closestNegFrame));
 
                 endRes = closestPos;
 
+            }
+
+            if (closestPosFrame == (99 ^ 99) || closestNegFrame == (-99 ^ 99))
+            {
+                if (closestPosFrame == (99 ^ 99))
+                    endRes = closestPos;
+                else
+                    endRes = closestNeg;
             }
 
             retDic.Add(bone.Key, endRes);
@@ -102,10 +110,8 @@ public class AnimationLoader : MonoBehaviour
                 byte[] bytes = readFile(file.FullName);
 
                 listOfDances.Add(folderParent.Name);
-
-                Dictionary<string, Dictionary<uint, rotNPos>> motion = getMotion(bytes);
                 
-                dances.Add(folderParent.Name, motion);
+                dances.Add(folderParent.Name, getMotion(bytes));
             }
         }
     }
@@ -150,11 +156,11 @@ public class AnimationLoader : MonoBehaviour
             float yR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
             float zR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
             float wR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-
+            
             if (!frames.ContainsKey(boneName))
             {
                 //Debug.Log("Add bone: " + boneName);
-                getCopy = getCopy + boneName + ">\n";
+                //getCopy = getCopy + boneName + ">\n"; // dosent work for some reason...
                 frames.Add(boneName, new Dictionary<uint, rotNPos>());
             }
 

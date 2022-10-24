@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1961,6 +1961,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1185777796}
   m_PrefabAsset: {fileID: 0}
+--- !u!95 &1353878799 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 95201671681520338, guid: 196405dd91626fd4c8aa9160f83204a2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1185777796}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1371808335
 GameObject:
   m_ObjectHideFlags: 0
@@ -2382,6 +2388,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1895078431}
   - component: {fileID: 1895078432}
+  - component: {fileID: 1895078433}
   m_Layer: 0
   m_Name: ModelRoot
   m_TagString: Untagged
@@ -2418,6 +2425,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   listOfDances: []
+--- !u!114 &1895078433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1895078430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46389e926c35453409aacd3fb782768c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 1353878799}
+  al: {fileID: 1895078432}
+  fakeFrame: 200
 --- !u!1 &1902896020
 GameObject:
   m_ObjectHideFlags: 0
