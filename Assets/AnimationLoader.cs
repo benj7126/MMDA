@@ -20,6 +20,14 @@ public class AnimationLoader : MonoBehaviour
     {
         Dictionary<string, rotNPos> retDic = new Dictionary<string, rotNPos>();
 
+        /*
+        Debug.Log("stuff");
+        foreach (KeyValuePair<string, Dictionary<string, Dictionary<uint, rotNPos>>> b in dances) // its empty...
+        {
+            Debug.Log(b.Key);
+        } 
+        */
+
         foreach (KeyValuePair<string, Dictionary<uint, rotNPos>> bone in dances[danceName])
         {
             rotNPos closestPos = default;
@@ -110,13 +118,41 @@ public class AnimationLoader : MonoBehaviour
                 byte[] bytes = readFile(file.FullName);
 
                 listOfDances.Add(folderParent.Name);
-                
-                dances.Add(folderParent.Name, getMotion(bytes));
+
+                Dictionary<string, string> translationList = getTranslationList(folderParent);
+
+                dances.Add(folderParent.Name, getMotion(bytes, translationList));
             }
         }
     }
 
-    Dictionary<string, Dictionary<uint, rotNPos>> getMotion(byte[] bytes)
+    Dictionary<string, string> getTranslationList(DirectoryInfo folderParent)
+    {
+        Dictionary<string, string> retDic = new Dictionary<string, string>();
+
+        foreach (FileInfo file in folderParent.GetFiles())
+        {
+            if (file.Name == "TranslationList.txt")
+            {
+                foreach (string s in File.ReadAllLines(file.FullName))
+                {
+                    if (s[0] == '#')
+                        continue;
+
+                    string[] strings = s.Split('>');
+
+                    if (strings.Length > 1)
+                        continue;
+                    
+                    retDic.Add(strings[0], strings[1]);
+                }
+            }
+        }
+
+        return retDic;
+    }
+
+    Dictionary<string, Dictionary<uint, rotNPos>> getMotion(byte[] bytes, Dictionary<string, string> transList)
     {
         Dictionary<string, Dictionary<uint, rotNPos>> frames = new Dictionary<string, Dictionary<uint, rotNPos>>();
 
@@ -145,7 +181,21 @@ public class AnimationLoader : MonoBehaviour
 
         for (int keyframeIndex = 0; keyframeIndex < howManyKeyframes; keyframeIndex++)
         {
-            string boneName = System.Text.Encoding.GetEncoding("shift-jis").GetString(getAndPushBytes(bytes, ref arrayPosition, 15), 0, 15);
+            string tempBoneName = System.Text.Encoding.GetEncoding("shift-jis").GetString(getAndPushBytes(bytes, ref arrayPosition, 15), 0, 15);
+
+            string boneName = "";
+            
+            foreach (char c in tempBoneName)
+            {
+                if (c == 0x00)
+                    break;
+                
+                boneName += c;
+            }
+
+            if (transList.ContainsKey(boneName))
+                boneName = transList[boneName];
+            
             uint frame = BitConverter.ToUInt32(getAndPushBytes(bytes, ref arrayPosition, 4));
 
             float xP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
@@ -160,7 +210,7 @@ public class AnimationLoader : MonoBehaviour
             if (!frames.ContainsKey(boneName))
             {
                 //Debug.Log("Add bone: " + boneName);
-                //getCopy = getCopy + boneName + ">\n"; // dosent work for some reason...
+                getCopy = getCopy + boneName + ">\n"; // dosent work for some reason...
                 frames.Add(boneName, new Dictionary<uint, rotNPos>());
             }
 
@@ -176,7 +226,7 @@ public class AnimationLoader : MonoBehaviour
 
         GUIUtility.systemCopyBuffer = getCopy;
 
-        //Debug.Log("totalling in: " + frames.Count);
+        //Debug.Log(getCopy);
         return frames;
     }
 
