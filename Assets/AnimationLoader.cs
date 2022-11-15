@@ -8,7 +8,7 @@ public class AnimationLoader : MonoBehaviour
 {
     public List<string> listOfDances = default;
 
-    private Dictionary<string, Dictionary<string, Dictionary<uint, rotNPos>>> dances = new Dictionary<string, Dictionary<string, Dictionary<uint, rotNPos>>>();
+    private Dictionary<string, Dictionary<HumanBodyBones, Dictionary<uint, rotNPos>>> dances = new Dictionary<string, Dictionary<HumanBodyBones, Dictionary<uint, rotNPos>>>();
     // Start is called before the first frame update
     void Start()
     {
@@ -16,9 +16,9 @@ public class AnimationLoader : MonoBehaviour
         loadAllFromPath(Path.Combine(myPath, "MMDFiles"));
     }
 
-    public Dictionary<string, rotNPos> getBoneMovementAtFrame(string danceName, uint frame)
+    public Dictionary<HumanBodyBones, rotNPos> getBoneMovementAtFrame(string danceName, uint frame)
     {
-        Dictionary<string, rotNPos> retDic = new Dictionary<string, rotNPos>();
+        Dictionary<HumanBodyBones, rotNPos> retDic = new Dictionary<HumanBodyBones, rotNPos>();
 
         /*
         Debug.Log("stuff");
@@ -28,7 +28,7 @@ public class AnimationLoader : MonoBehaviour
         } 
         */
 
-        foreach (KeyValuePair<string, Dictionary<uint, rotNPos>> bone in dances[danceName])
+        foreach (KeyValuePair<HumanBodyBones, Dictionary<uint, rotNPos>> bone in dances[danceName])
         {
             rotNPos closestPos = default;
             rotNPos closestNeg = default;
@@ -64,6 +64,8 @@ public class AnimationLoader : MonoBehaviour
 
                     endRes = frameKPV.Value;
                 }
+
+                Debug.Log(bone.Key.ToString() + " - target: " + frame + " | frame: " + frameKPV.Key + " | " + frameKPV.Value.vec + " | " + frameKPV.Value.rot + " | " + endRes.vec + " | " + endRes.rot);
             }
 
             if (closestPosFrame != 0 && closestNegFrame != 0 && closestPosFrame != (99^99) && closestNegFrame != (-99^99))
@@ -141,10 +143,11 @@ public class AnimationLoader : MonoBehaviour
 
                     string[] strings = s.Split('>');
 
-                    if (strings.Length > 1)
+                    if (strings.Length > 2)
                         continue;
                     
-                    retDic.Add(strings[0], strings[1]);
+                    if (!retDic.ContainsKey(strings[0]))
+                        retDic.Add(strings[0], strings[1]);
                 }
             }
         }
@@ -152,9 +155,9 @@ public class AnimationLoader : MonoBehaviour
         return retDic;
     }
 
-    Dictionary<string, Dictionary<uint, rotNPos>> getMotion(byte[] bytes, Dictionary<string, string> transList)
+    Dictionary<HumanBodyBones, Dictionary<uint, rotNPos>> getMotion(byte[] bytes, Dictionary<string, string> transList)
     {
-        Dictionary<string, Dictionary<uint, rotNPos>> frames = new Dictionary<string, Dictionary<uint, rotNPos>>();
+        Dictionary<HumanBodyBones, Dictionary<uint, rotNPos>> frames = new Dictionary<HumanBodyBones, Dictionary<uint, rotNPos>>();
 
         int arrayPosition = 0;
 
@@ -182,9 +185,8 @@ public class AnimationLoader : MonoBehaviour
         for (int keyframeIndex = 0; keyframeIndex < howManyKeyframes; keyframeIndex++)
         {
             string tempBoneName = System.Text.Encoding.GetEncoding("shift-jis").GetString(getAndPushBytes(bytes, ref arrayPosition, 15), 0, 15);
-
             string boneName = "";
-            
+
             foreach (char c in tempBoneName)
             {
                 if (c == 0x00)
@@ -195,7 +197,7 @@ public class AnimationLoader : MonoBehaviour
 
             if (transList.ContainsKey(boneName))
                 boneName = transList[boneName];
-            
+
             uint frame = BitConverter.ToUInt32(getAndPushBytes(bytes, ref arrayPosition, 4));
 
             float xP = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
@@ -206,25 +208,33 @@ public class AnimationLoader : MonoBehaviour
             float yR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
             float zR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
             float wR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
-            
-            if (!frames.ContainsKey(boneName))
+
+            if (int.TryParse(boneName, out var _))
+                continue;
+
+            if (!Enum.TryParse(boneName, out HumanBodyBones enum_out))
+                continue;
+
+            if (!frames.ContainsKey(enum_out))
             {
                 //Debug.Log("Add bone: " + boneName);
-                getCopy = getCopy + boneName + ">\n"; // dosent work for some reason...
-                frames.Add(boneName, new Dictionary<uint, rotNPos>());
+                //getCopy = getCopy + boneName + ">\n"; // dosent work for some reason...
+                frames.Add(enum_out, new Dictionary<uint, rotNPos>());
             }
 
             rotNPos thisRNP = new rotNPos();
             thisRNP.vec = new Vector3(xP, yP, zP);
             thisRNP.rot = new Quaternion(xR, yR, zR, wR);
 
-            frames[boneName].Add(frame, thisRNP);
+            //Debug.Log(frame + " | " + enum_out + " | " + boneName + " | " + _old);
+            if (!frames[enum_out].ContainsKey(frame))
+                frames[enum_out].Add(frame, thisRNP);
 
             //skip frame interpolation data (i have no clue how it works/what it dose, so its basically useless...)
             arrayPosition += 64;
         }
 
-        GUIUtility.systemCopyBuffer = getCopy;
+        //GUIUtility.systemCopyBuffer = getCopy;
 
         //Debug.Log(getCopy);
         return frames;

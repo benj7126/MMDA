@@ -27,16 +27,18 @@ public class AnimationPlayer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Dictionary<string, AnimationLoader.rotNPos> bonePos = al.getBoneMovementAtFrame("Gimme×Gimme", (uint) fakeFrame);
-        
-        foreach (KeyValuePair<string, AnimationLoader.rotNPos> bone in bonePos)
+        Dictionary<HumanBodyBones, AnimationLoader.rotNPos> bonePos = al.getBoneMovementAtFrame("Gimme×Gimme", (uint) fakeFrame);
+
+        Debug.Log(bonePos.Keys.Count);
+
+        foreach (KeyValuePair<HumanBodyBones, AnimationLoader.rotNPos> bone in bonePos)
         {
-            if (Enum.TryParse<HumanBodyBones>(bone.Key, out var boneEnum))
-            {
-                Transform boneTransfrom = animator.GetBoneTransform(boneEnum);
-                
-                Debug.Log($"One {bone.Key} got through");
-            }
+            Transform boneTransfrom = animator.GetBoneTransform(bone.Key);
+
+            boneTransfrom.localPosition = bone.Value.vec;
+            boneTransfrom.localRotation = bone.Value.rot;
+
+            //Debug.Log(bone.Value);
         }
     }
 }

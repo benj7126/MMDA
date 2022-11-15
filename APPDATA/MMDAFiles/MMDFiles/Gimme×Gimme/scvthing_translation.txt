@@ -1,0 +1,25 @@
+ 全ての親	 全ての親	Hips	root
+ 首	 首	Neck	neck
+ 頭	 頭	Head	head
+ センター	 センター	Spine	center
+ 上半身2	 上半身2	Chest	upper body 2
+ 上半身	 上半身	UpperChest	upper body
+ 下半身	 下半身	lower body	lower body
+ 左肩	 肩.L	LeftShoulder	shoulder_L
+ 左腕	 腕.L	LeftUpperArm	arm_L
+ 左ひじ	 ひじ.L	LeftLowerElbow	elbow_L
+左手首	 手首.L	LeftHand	wrist_L
+ 右肩	 肩.R	RightSholuder	shoulder_R
+ 右腕	 腕.R	RightUpperArm	arm_R
+ 右ひじ	 ひじ.R	RightLowerArm	elbow_R
+右手首	 手首.R	RightHand	wrist_R
+ 左足	 足.L	LeftUpperLeg	leg_L
+ 左ひざ	 ひざ.L	LeftLowerLeg	knee_L
+ 左足首	 足首.L	LeftFoot	ankle_L
+ 右足	 足.R	RightUpperLeg	leg_R
+ 右ひざ	 ひざ.R	RightLowerLeg	knee_R
+ 右足首	 足首.R	RightFoot	ankle_R
+ 左つま先	 つま先.L	LeftToes	toe_L
+ 右つま先	 つま先.R	RightToes	toe_R
+ 左目	 目.L	LeftEye	eye_L
+ 右目	 目.R	RightEye	eye_R
