@@ -33,15 +33,16 @@ public class AnimationLoader : MonoBehaviour
             rotNPos closestPos = default;
             rotNPos closestNeg = default;
 
-            int closestPosFrame = 99^99;
-            int closestNegFrame = -99^99;
+            int closestPosFrame = 10000;
+            int closestNegFrame = -10000;
 
             rotNPos endRes = default;
 
             foreach (KeyValuePair<uint, rotNPos> frameKPV in bone.Value)
             {
                 int diff = (int)frame - (int)frameKPV.Key;
-                if (diff > 0) // change pos(positive) frame
+                //Debug.Log(diff + " | " + closestPosFrame + " | " + (diff < closestPosFrame));
+                if (diff > 0)
                 {
                     if (diff < closestPosFrame)
                     {
@@ -49,7 +50,7 @@ public class AnimationLoader : MonoBehaviour
                         closestPos = frameKPV.Value;
                     }
                 }
-                else if (diff < 0) // change neg(negative) frame
+                else if (diff < 0)
                 {
                     if (diff > closestNegFrame)
                     {
@@ -65,7 +66,7 @@ public class AnimationLoader : MonoBehaviour
                     endRes = frameKPV.Value;
                 }
 
-                Debug.Log(bone.Key.ToString() + " - target: " + frame + " | frame: " + frameKPV.Key + " | " + frameKPV.Value.vec + " | " + frameKPV.Value.rot + " | " + endRes.vec + " | " + endRes.rot);
+                //Debug.Log(bone.Key.ToString() + " - target: " + frame + " | frame: " + frameKPV.Key + " | " + frameKPV.Value.vec + " | " + frameKPV.Value.rot + " | " + endRes.vec + " | " + endRes.rot);
             }
 
             if (closestPosFrame != 0 && closestNegFrame != 0 && closestPosFrame != (99^99) && closestNegFrame != (-99^99))
@@ -73,8 +74,8 @@ public class AnimationLoader : MonoBehaviour
                 // idk what i do here...
                 float posScale = (float)closestPosFrame / (closestPosFrame + Math.Abs(closestNegFrame));
 
-                endRes = closestPos;
-
+                endRes.rot = Quaternion.Lerp(closestPos.rot, closestNeg.rot, posScale);
+                endRes.vec = Vector3.Lerp(closestPos.vec, closestNeg.vec, posScale);
             }
 
             if (closestPosFrame == (99 ^ 99) || closestNegFrame == (-99 ^ 99))
@@ -84,6 +85,7 @@ public class AnimationLoader : MonoBehaviour
                 else
                     endRes = closestNeg;
             }
+            endRes = closestPos;
 
             retDic.Add(bone.Key, endRes);
         }
@@ -209,6 +211,9 @@ public class AnimationLoader : MonoBehaviour
             float zR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
             float wR = BitConverter.ToSingle(getAndPushBytes(bytes, ref arrayPosition, 4));
 
+            //skip frame interpolation data (i have no clue how it works/what it dose, so its basically useless...)
+            arrayPosition += 64;
+
             if (int.TryParse(boneName, out var _))
                 continue;
 
@@ -217,7 +222,7 @@ public class AnimationLoader : MonoBehaviour
 
             if (!frames.ContainsKey(enum_out))
             {
-                //Debug.Log("Add bone: " + boneName);
+                Debug.Log("Add bone: " + boneName);
                 //getCopy = getCopy + boneName + ">\n"; // dosent work for some reason...
                 frames.Add(enum_out, new Dictionary<uint, rotNPos>());
             }
@@ -229,9 +234,6 @@ public class AnimationLoader : MonoBehaviour
             //Debug.Log(frame + " | " + enum_out + " | " + boneName + " | " + _old);
             if (!frames[enum_out].ContainsKey(frame))
                 frames[enum_out].Add(frame, thisRNP);
-
-            //skip frame interpolation data (i have no clue how it works/what it dose, so its basically useless...)
-            arrayPosition += 64;
         }
 
         //GUIUtility.systemCopyBuffer = getCopy;
